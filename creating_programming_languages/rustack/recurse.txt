@@ -1,0 +1,18 @@
+/factorial { 1 factorial_int } def
+
+/factorial_int {
+// 関数の引数を後ろから受け取る
+  /acc exch def
+  /n exch def
+
+  { n 2 < }
+  { acc }
+  {
+    n 1 -
+    acc n *
+    factorial_int
+  }
+  if
+} def
+
+10 factorial puts

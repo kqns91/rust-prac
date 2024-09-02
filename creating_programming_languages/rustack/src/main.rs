@@ -122,6 +122,9 @@ fn parse_batch(source: impl BufRead) -> Vec<Value> {
     let mut vm = Vm::new();
     for line in source.lines().flatten() {
         for word in line.split(" ") {
+            if word == "//" {
+                break;
+            }
             parse_word(word, &mut vm);
         }
     }
@@ -173,6 +176,7 @@ fn eval(code: Value, vm: &mut Vm) {
         match  val {
             Value::Block(block) => {
                 for code in block {
+                    println!("{:?}", vm.stack);
                     eval(code, vm);
                 }
             }
