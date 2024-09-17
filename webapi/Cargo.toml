@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+diesel = { version = "2.2.4", features = ["postgres", "chrono"] }
+dotenv = "0.15.0"
+chorono = "0.4"
 
 [lib]
 name = "webapi_mvp"
