@@ -4,9 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# features に 使用する機能を指定する
 diesel = { version = "2.2.4", features = ["postgres", "chrono"] }
 dotenv = "0.15.0"
-chorono = "0.4"
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
 
 [lib]
 name = "webapi_mvp"

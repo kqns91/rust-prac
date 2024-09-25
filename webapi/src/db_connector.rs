@@ -6,6 +6,7 @@ use diesel::result::Error;
 use dotenv::dotenv;
 use std::env;
 
+// DB 接続。DATABASE_URL を .env に設定しておく。
 pub fn create_connection() -> PgConnection {
     dotenv().ok();
 
@@ -14,7 +15,16 @@ pub fn create_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn insert_project(conn: &PgConnection, name: &str, url_name: &str) -> Result<Project, Error> {
+/**
+ * DB へ値を挿入。
+ * Diesel のメソッドチェーンで SQL を生成し、実行する。
+ */
+
+pub fn insert_project(
+    conn: &mut PgConnection,
+    name: &str,
+    url_name: &str,
+) -> Result<Project, Error> {
     let new_project = NewProject { name, url_name };
     diesel::insert_into(projects::table)
         .values(&new_project)
@@ -22,7 +32,7 @@ pub fn insert_project(conn: &PgConnection, name: &str, url_name: &str) -> Result
 }
 
 pub fn insert_technology(
-    conn: &PgConnection,
+    conn: &mut PgConnection,
     name: &str,
     url_name: &str,
     image_url: &str,
@@ -38,7 +48,7 @@ pub fn insert_technology(
 }
 
 pub fn insert_adopt(
-    conn: &PgConnection,
+    conn: &mut PgConnection,
     projects_id: i64,
     technologies_id: i64,
     created_at: chrono::NaiveDateTime,
@@ -53,9 +63,13 @@ pub fn insert_adopt(
         .get_result(conn)
 }
 
+/**
+ * DB から値を取得。
+ */
+
 fn get_technology_by_url_name(
     // 1
-    conn: &PgConnection,
+    conn: &mut PgConnection,
     tech_url_name: &str,
 ) -> Result<Technology, Error> {
     technologies::table
@@ -65,7 +79,7 @@ fn get_technology_by_url_name(
 
 fn get_projects_by_technologies_id(
     // 2 & 3
-    conn: &PgConnection,
+    conn: &mut PgConnection,
     tech_id: i64,
 ) -> Result<Vec<Project>, Error> {
     projects::table
@@ -77,11 +91,58 @@ fn get_projects_by_technologies_id(
 
 pub fn get_technology_page_by_url_name(
     // 1 -> 2 & 3
-    conn: &PgConnection,
+    conn: &mut PgConnection,
     tech_url_name: &str,
 ) -> Result<(Technology, Vec<Project>), Error> {
-    let tech = get_technology_by_url_name(&conn, tech_url_name)?;
-    let projs = get_projects_by_technologies_id(&conn, tech.id)?;
+    let tech = get_technology_by_url_name(conn, tech_url_name)?;
+    let projs = get_projects_by_technologies_id(conn, tech.id)?;
 
     Ok((tech, projs))
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod unit_DBテスト {
+    use super::*;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn get_technology_page_by_url_name関数はTechnologyページの情報をDBから一括で取得する() {
+        test_transaction(|conn| {
+            let proj_name = "TestProject";
+            let proj_url_name = "test_project";
+            let tech_name = "TestTechnology";
+            let tech_url_name = "test_technology";
+            let tech_image_url = "https://example.com/";
+            let dt = NaiveDate::from_ymd_opt(2016, 7, 8)
+                .unwrap()
+                .and_hms_opt(9, 10, 11)
+                .unwrap();
+
+            // テストのためのデータ挿入
+            let new_proj = insert_project(conn, proj_name, proj_url_name)?;
+            let new_tech = insert_technology(conn, tech_name, tech_url_name, tech_image_url)?;
+            let _ = insert_adopt(conn, new_proj.id, new_tech.id, dt)?;
+
+            // 関数のテスト実行
+            let (tech, projs) = get_technology_page_by_url_name(conn, tech_url_name)?;
+            let proj = &projs[0];
+            assert_eq!(tech.name, tech_name);
+            assert_eq!(tech.image_url, tech_image_url);
+            assert_eq!(proj.name, proj_name);
+            assert_eq!(proj.url_name, proj_url_name);
+
+            Ok(())
+        })
+        .unwrap();
+    }
+}
+
+// テスト実行後にデータをロールバックするための関数。
+pub fn test_transaction<F, R>(test_fn: F) -> Result<R, Error>
+where
+    F: FnOnce(&mut PgConnection) -> Result<R, Error>,
+{
+    let connection = &mut create_connection();
+    Ok(connection.test_transaction(|connection| test_fn(connection)))
 }
