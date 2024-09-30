@@ -1,8 +1,9 @@
 use super::schema::*;
-use diesel::{Queryable, Insertable}; // サンプルでは不要そう。diesel が v2.2.4 の影響?
+use diesel::{Insertable, Queryable}; // サンプルでは不要そう。diesel が v2.2.4 の影響?
+use serde::{Deserialize, Serialize};
 
 // projectsテーブル用
-#[derive(Queryable)] // SQL で取得された値を読み込むために使用
+#[derive(Queryable, Serialize, Deserialize)] // SQL で取得された値を読み込むために使用
 pub struct Project {
     pub id: i64,
     pub name: String,
@@ -17,7 +18,7 @@ pub struct NewProject<'a> {
 }
 
 // technologiesテーブル用
-#[derive(Queryable)]
+#[derive(Queryable, Serialize, Deserialize)]
 pub struct Technology {
     pub id: i64,
     pub name: String,

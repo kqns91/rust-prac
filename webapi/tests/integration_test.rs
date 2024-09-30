@@ -22,6 +22,6 @@ mod integration_API_DBテスト {
         // 取得した値をパースして確認
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        assert_eq!(body_str, tech_name);
+        assert!(body_str.contains(tech_name));
     }
 }
