@@ -1,0 +1,11 @@
+[package]
+# 任意の名前でいい。
+name = "webapi_mvp_e2e"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# 
+thirtyfour = "0.34.0"
+# 非同期関数を扱うため
+tokio = { version = "1", features = ["rt"] }
